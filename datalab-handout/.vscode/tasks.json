@@ -1,0 +1,45 @@
+{
+    "version": "2.0.0",
+    "tasks":[
+         {
+             "label": "run", // task 的名字，调用方式就是 task run
+             "command": "g++",
+             "args": [
+                 "-std=c++11",
+                 "-g",
+                 "${file}",
+                 "-o",
+                 "${fileBasenameNoExtension}"
+             ], // 编译命令参数
+             "type": "shell",
+             "problemMatcher": {
+             "owner": "cpp",
+             "fileLocation": [
+                 "relative",
+                 "${workspaceFolder}"
+             ],
+             "pattern": {
+                 "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                 "file": 1,
+                 "line": 2,
+                 "column": 3,
+                 "severity": 4,
+                 "message": 5
+             }}
+         }, // 这个 task 用于编译单个 cpp 文件
+         {
+             "label": "build",
+             "command": "make clean && make btest",
+             "args": [],
+             "type": "shell",
+             "problemMatcher": []
+         }, // 这个 task 调用 make 来 build 程序
+         {
+             "label": "clean",
+             "command": "make clean",
+             "args": [],
+             "type": "shell",
+             "problemMatcher": []
+         } // 这个 task 调用 make clean
+    ]
+ }
