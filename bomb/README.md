@@ -1,9 +1,5 @@
 # CSAPP-Lab2-Bomb Lab
 
-[toc]
-
----
-
 这个实验主要考察的是对汇编代码的掌握以及 gdb 的使用。
 
 关于 gdb 的使用可以看这两个：
@@ -221,7 +217,14 @@ Border relations with Canada have never been better.
   400fcd:	c3                   	retq
 ```
 
-一步一步看下来，发现和第 2 关一样用到了 `sscanf()`，那么就不再赘述，可以看到 `0x400f6a` 处判断第一个数是否不大于 7，否则爆炸，并且还能看到是无符号数的比较。那么我们的第一个数取值范围在 0 ~ 6。
+一步一步看下来，发现和第 2 关一样用到了 `sscanf()`，那么就不再赘述。通过 `0x400f51` 可以判断 `0x4025cf` 处是格式化字符串：
+
+```shell
+(gdb) x/s 0x4025cf
+"%d %d"
+```
+
+可以看到结果应该是两个数字。通过 `0x400f6a` 处判断第一个数是否不大于 7，否则爆炸，并且还能看到是无符号数的比较。那么我们的第一个数取值范围在 0 ~ 6。
 
 继续运行，发现在 `0x400f75` 处依据第一个数的值跳转到不同的位置（`0x402470+n*8` 这个地址所拥有的值），那么我们看一下取每个值的时候分别跳转到哪里：
 
@@ -253,3 +256,221 @@ Border relations with Canada have never been better.
 | 4 | 389(0x185) |
 | 5 | 206(0xce) |
 | 6 | 682(0x2aa) |
+
+## 第 4 关
+
+```git
+000000000040100c <phase_4>:
+  40100c:	48 83 ec 18          	sub    $0x18,%rsp
+  401010:	48 8d 4c 24 0c       	lea    0xc(%rsp),%rcx
+  401015:	48 8d 54 24 08       	lea    0x8(%rsp),%rdx
+  40101a:	be cf 25 40 00       	mov    $0x4025cf,%esi
+  40101f:	b8 00 00 00 00       	mov    $0x0,%eax
+  401024:	e8 c7 fb ff ff       	callq  400bf0 <__isoc99_sscanf@plt>
+  401029:	83 f8 02             	cmp    $0x2,%eax
+  40102c:	75 07                	jne    401035 <phase_4+0x29>
+  40102e:	83 7c 24 08 0e       	cmpl   $0xe,0x8(%rsp)
+  401033:	76 05                	jbe    40103a <phase_4+0x2e>
+  401035:	e8 00 04 00 00       	callq  40143a <explode_bomb>
+  40103a:	ba 0e 00 00 00       	mov    $0xe,%edx
+  40103f:	be 00 00 00 00       	mov    $0x0,%esi
+  401044:	8b 7c 24 08          	mov    0x8(%rsp),%edi
+  401048:	e8 81 ff ff ff       	callq  400fce <func4>
+  40104d:	85 c0                	test   %eax,%eax
+  40104f:	75 07                	jne    401058 <phase_4+0x4c>
+  401051:	83 7c 24 0c 00       	cmpl   $0x0,0xc(%rsp)
+  401056:	74 05                	je     40105d <phase_4+0x51>
+  401058:	e8 dd 03 00 00       	callq  40143a <explode_bomb>
+  40105d:	48 83 c4 18          	add    $0x18,%rsp
+  401061:	c3                   	retq
+```
+
+这关前半部分和前几关差不多，通过 `0x40101a` 判断出 `0x4025cf` 处是格式化字符串：
+
+```shell
+(gdb) x/s 0x4025cf
+"%d %d"
+```
+
+可以看到这关的结果应该是两个数字。
+
+在 `0x40102e` 处能够推断出第一个数字是一个小于 0xe(14) 的数字。在 `0x401051` 处推断出第二个数字必须是 0。
+
+然后看到它调用了一个 `func4` 函数，并要求返回值为 0：
+
+```git
+0000000000400fce <func4>:
+  400fce:	48 83 ec 08          	sub    $0x8,%rsp
+  400fd2:	89 d0                	mov    %edx,%eax
+  400fd4:	29 f0                	sub    %esi,%eax
+  400fd6:	89 c1                	mov    %eax,%ecx
+  400fd8:	c1 e9 1f             	shr    $0x1f,%ecx
+  400fdb:	01 c8                	add    %ecx,%eax
+  400fdd:	d1 f8                	sar    %eax
+  400fdf:	8d 0c 30             	lea    (%rax,%rsi,1),%ecx
+  400fe2:	39 f9                	cmp    %edi,%ecx
+  400fe4:	7e 0c                	jle    400ff2 <func4+0x24>
+  400fe6:	8d 51 ff             	lea    -0x1(%rcx),%edx
+  400fe9:	e8 e0 ff ff ff       	callq  400fce <func4>
+  400fee:	01 c0                	add    %eax,%eax
+  400ff0:	eb 15                	jmp    401007 <func4+0x39>
+  400ff2:	b8 00 00 00 00       	mov    $0x0,%eax
+  400ff7:	39 f9                	cmp    %edi,%ecx
+  400ff9:	7d 0c                	jge    401007 <func4+0x39>
+  400ffb:	8d 71 01             	lea    0x1(%rcx),%esi
+  400ffe:	e8 cb ff ff ff       	callq  400fce <func4>
+  401003:	8d 44 00 01          	lea    0x1(%rax,%rax,1),%eax
+  401007:	48 83 c4 08          	add    $0x8,%rsp
+  40100b:	c3                   	retq
+```
+
+这个函数的代码是一个递归调用的函数，直接分析很不好分析，我们进行逆向工程将它还原成 C 语言代码，这里是我还原出来的代码：
+
+```c
+#include<stdio.h>
+
+int fun(int x, int y, int z)
+{
+    int val, u;
+    val = z-y;
+    u = (val >> 31) & (~1);
+    val += u;
+    val >>= 1;
+    u = val + y;
+    if(u == x)
+        return 0;
+    if(u > x)
+    {
+        z = u-1;
+        val = fun(x, y, z);
+        val *= 2;
+    }
+    else
+    {
+        y = u+1;
+        val = fun(x, y, z);
+        val = val*2+1;
+    }
+    return val;
+}
+
+int main()
+{
+    int res;
+    for(int i = 0;i <= 14; ++i)
+    {
+        res = fun(i, 0, 14);
+        if(res == 0)
+            printf("%d ", i);
+    }
+    printf("\n");
+    return 0;
+}
+```
+
+我们在 `main` 函数中将 0~14 都试一遍得出可以令 res 为 0 的参数，结果为：
+
+```shell
+0 1 3 7
+```
+
+那么，最终的密码字符串有四种：
+
+```text
+0 0
+1 0
+3 0
+7 0
+```
+
+## 第 5 关
+
+先看总体代码：
+
+```git
+0000000000401062 <phase_5>:
+  401062:	53                   	push   %rbx
+  401063:	48 83 ec 20          	sub    $0x20,%rsp
+  401067:	48 89 fb             	mov    %rdi,%rbx
+  40106a:	64 48 8b 04 25 28 00 	mov    %fs:0x28,%rax
+  401071:	00 00
+  401073:	48 89 44 24 18       	mov    %rax,0x18(%rsp)
+  401078:	31 c0                	xor    %eax,%eax
+  40107a:	e8 9c 02 00 00       	callq  40131b <string_length>
+  40107f:	83 f8 06             	cmp    $0x6,%eax
+  401082:	74 4e                	je     4010d2 <phase_5+0x70>
+  401084:	e8 b1 03 00 00       	callq  40143a <explode_bomb>
+  401089:	eb 47                	jmp    4010d2 <phase_5+0x70>
+  40108b:	0f b6 0c 03          	movzbl (%rbx,%rax,1),%ecx
+  40108f:	88 0c 24             	mov    %cl,(%rsp)
+  401092:	48 8b 14 24          	mov    (%rsp),%rdx
+  401096:	83 e2 0f             	and    $0xf,%edx
+  401099:	0f b6 92 b0 24 40 00 	movzbl 0x4024b0(%rdx),%edx
+  4010a0:	88 54 04 10          	mov    %dl,0x10(%rsp,%rax,1)
+  4010a4:	48 83 c0 01          	add    $0x1,%rax
+  4010a8:	48 83 f8 06          	cmp    $0x6,%rax
+  4010ac:	75 dd                	jne    40108b <phase_5+0x29>
+  4010ae:	c6 44 24 16 00       	movb   $0x0,0x16(%rsp)
+  4010b3:	be 5e 24 40 00       	mov    $0x40245e,%esi
+  4010b8:	48 8d 7c 24 10       	lea    0x10(%rsp),%rdi
+  4010bd:	e8 76 02 00 00       	callq  401338 <strings_not_equal>
+  4010c2:	85 c0                	test   %eax,%eax
+  4010c4:	74 13                	je     4010d9 <phase_5+0x77>
+  4010c6:	e8 6f 03 00 00       	callq  40143a <explode_bomb>
+  4010cb:	0f 1f 44 00 00       	nopl   0x0(%rax,%rax,1)
+  4010d0:	eb 07                	jmp    4010d9 <phase_5+0x77>
+  4010d2:	b8 00 00 00 00       	mov    $0x0,%eax
+  4010d7:	eb b2                	jmp    40108b <phase_5+0x29>
+  4010d9:	48 8b 44 24 18       	mov    0x18(%rsp),%rax
+  4010de:	64 48 33 04 25 28 00 	xor    %fs:0x28,%rax
+  4010e5:	00 00
+  4010e7:	74 05                	je     4010ee <phase_5+0x8c>
+  4010e9:	e8 42 fa ff ff       	callq  400b30 <__stack_chk_fail@plt>
+  4010ee:	48 83 c4 20          	add    $0x20,%rsp
+  4010f2:	5b                   	pop    %rbx
+  4010f3:	c3                   	retq
+```
+
+这关一开始把输入的字符串保存到了 `%rbx`，然后在 `%rsp+0x18` 处设置了金丝雀值。然后将 `%eax` 置 0，调用 `string_length` 函数得到我们输入的字符串长度，可以看到，要求是 6 位。
+
+如果长度正确，接下来又将 `%eax` 置 0，然后跳转到了一个循环：
+
+```git{.line-numbers}
+  40108b:	0f b6 0c 03          	movzbl (%rbx,%rax,1),%ecx
+  40108f:	88 0c 24             	mov    %cl,(%rsp)
+  401092:	48 8b 14 24          	mov    (%rsp),%rdx
+  401096:	83 e2 0f             	and    $0xf,%edx
+  401099:	0f b6 92 b0 24 40 00 	movzbl 0x4024b0(%rdx),%edx
+  4010a0:	88 54 04 10          	mov    %dl,0x10(%rsp,%rax,1)
+  4010a4:	48 83 c0 01          	add    $0x1,%rax
+  4010a8:	48 83 f8 06          	cmp    $0x6,%rax
+  4010ac:	75 dd                	jne    40108b <phase_5+0x29>
+```
+
+这个循环以 `%rax` 为标志，从 0 开始每次加 1 直到 5（6 就退出了），第 1~4 行将我们输入的字符串的第 `%rax` 位取出来，并截取其位表示的低 4 位作为偏移量 p，然后第 5 行取出在 `0x4024b0` 处保存的一个字符串的第 p 位，保存在 `%rsp+10` 对于相应 `%rax` 的偏移位置。
+
+`0x4024b0` 处的字符串为：
+
+```shell
+(gdb) x/s 0x4024b0
+0x4024b0 <array.3449>:  "maduiersnfotvbylSo you think you can stop the bomb with ctrl-c, do you?"
+```
+
+也就是说，经过这个循环后，它将我们输入的字符串变成了另一个字符串，保存在 `%rsp+10~15` 的空间中。
+
+再继续看总代码，退出循环之后会调用 `strings_not_equal` 函数来与 `0x40245e` 处保存的字符串对比，相同则通过，否则爆炸。
+
+`0x40245e` 处的字符串为：
+
+```shell
+(gdb) x/s 0x40245e
+0x40245e:       "flyers"
+```
+
+与上面的字符串对比，由于我们的偏移量 p 是 4 位的，范围是 0~15，所以我们要在前 16 位找出我们需要的字符，得到对应的偏移量为：0x9, 0xf, 0xe, 0x5, 0x6, 0x7。
+
+查询 ASCII 码表，我们输入的字符只要后 4 位是上面的数字就行，这里是其中一种答案：
+
+```text
+9on567
+```
