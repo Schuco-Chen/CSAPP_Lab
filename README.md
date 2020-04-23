@@ -2,13 +2,13 @@
 
 ## 1. [Lab1_Data Lab](https://github.com/Schuco-Chen/CSAPP_Lab/tree/master/datalab-handout)
 
-Students implement simple logical, two's complement, and floating point functions, but using a highly restricted subset of C. For example, they might be asked to compute the absolute value of a number using only bit-level operations and straightline code. This lab helps students understand the bit-level representations of C data types and the bit-level behavior of the operations on data. 
+让你只能使用位级运算，实现一系列功能。帮助深入理解计算机的位级表示和运算。
 
 - [说明](https://github.com/Schuco-Chen/CSAPP_Lab/blob/master/datalab-handout/Directions)
 - [解答](https://github.com/Schuco-Chen/CSAPP_Lab/blob/master/datalab-handout/README.md)
 
 ## 2. [Lab2_Bomb Lab](https://github.com/Schuco-Chen/CSAPP_Lab/tree/master/bomb)
 
-A "binary bomb" is a program provided to students as an object code file. When run, it prompts the user to type in 6 different strings. If any of these is incorrect, the bomb "explodes," printing an error message and logging the event on a grading server. Students must "defuse" their own unique bomb by disassembling and reverse engineering the program to determine what the 6 strings should be. The lab teaches students to understand assembly language, and also forces them to learn how to use a debugger. It's also great fun. A legendary lab among the CMU undergrads. 
+通过反汇编和逆向工程，破解 6 个炸弹的密码串。帮助熟练使用 gdb 和提高读懂汇编代码并进行逆向工程的能力。
 
 - [解答](https://github.com/Schuco-Chen/CSAPP_Lab/blob/master/bomb/README.md)
